@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <TargetFramework>net6.0</TargetFramework>
+	  <ImplicitUsings>disable</ImplicitUsings>
+	  <Nullable>disable</Nullable>
+	  <Optimize>true</Optimize>
+	  <DebugType>none</DebugType>
+	  <DebugSymbols>false</DebugSymbols>
+	  <Deterministic>true</Deterministic>
+	  <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+	  <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+	  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	  <GenerateDependencyFile>false</GenerateDependencyFile>
+	  <WarningsAsErrors>false</WarningsAsErrors>
+	  <GenerateDocumentationFile>false</GenerateDocumentationFile>
+	  <OutputPath>G:\Games\SecretFlasherManaka v1.0.6\BepInEx\plugins</OutputPath>
+	  <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Libs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>Libs\0Harmony.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>Libs\Assembly-CSharp.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Core">
+      <HintPath>Libs\BepInEx.Core.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>Libs\BepInEx.Unity.IL2CPP.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>Libs\Il2CppInterop.Runtime.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>Libs\Il2Cppmscorlib.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>Libs\UnityEngine.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>Libs\UnityEngine.CoreModule.dll</HintPath>
+		<Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
