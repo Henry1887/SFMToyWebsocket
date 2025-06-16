@@ -22,7 +22,8 @@
     <Folder Include="Libs\" />
   </ItemGroup>
 
-  <ItemGroup>
+
+	<ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>Libs\0Harmony.dll</HintPath>
 		<Private>false</Private>
@@ -54,6 +55,9 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>Libs\UnityEngine.CoreModule.dll</HintPath>
 		<Private>false</Private>
+    </Reference>
+    <Reference Include="websocket-sharp">
+      <HintPath>Libs\websocket-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
 

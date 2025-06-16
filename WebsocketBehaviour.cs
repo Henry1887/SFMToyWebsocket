@@ -1,22 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.WebSockets;
-using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using System.Threading;
 using ExposureUnnoticed2.Object3D.Player.Scripts;
 using ExposureUnnoticed2.Object3D.AdultGoods;
+using WebSocketSharp.Server;
+using WebSocketSharp;
 
 namespace SFMToyWebsocket
 {
     internal class WebsocketBehaviour : MonoBehaviour
     {
-        private HttpListener httpListener;
-        private List<WebSocket> clients = new List<WebSocket>();
-        private CancellationTokenSource cts = new CancellationTokenSource();
-
+        private WebSocketServer wssv;
         private float timer = 0f;
         private const float BroadcastInterval = 0.1f;
 
@@ -27,71 +22,16 @@ namespace SFMToyWebsocket
 
         private void Start()
         {
-            httpListener = new HttpListener();
-            httpListener.Prefixes.Add("http://localhost:11451/ws/");
-            httpListener.Start();
-
-            Plugin.Instance.Log.LogInfo("WebSocket server started on ws://localhost:11451/ws/");
-            ListenLoop();
-        }
-
-        private async void ListenLoop()
-        {
             try
             {
-                while (!cts.Token.IsCancellationRequested)
-                {
-                    HttpListenerContext context = await httpListener.GetContextAsync();
-
-                    if (context.Request.IsWebSocketRequest)
-                    {
-                        HttpListenerWebSocketContext wsContext = await context.AcceptWebSocketAsync(null);
-                        WebSocket socket = wsContext.WebSocket;
-                        lock (clients) clients.Add(socket);
-                        _ = HandleClient(socket);
-                        Plugin.Instance.Log.LogInfo("Client connected.");
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = 400;
-                        context.Response.Close();
-                    }
-                }
-            }
-            catch (HttpListenerException ex) when (ex.ErrorCode == 995)
-            {
-                Plugin.Instance.Log.LogInfo("HttpListener shut down cleanly.");
-            }
-            catch (ObjectDisposedException)
-            {
-                Plugin.Instance.Log.LogInfo("HttpListener disposed during shutdown.");
+                wssv = new WebSocketServer(11451);
+                wssv.AddWebSocketService<StatusService>("/ws");
+                wssv.Start();
+                Plugin.Instance.Log.LogInfo("WebSocketSharp server started on ws://localhost:11451/ws/");
             }
             catch (Exception ex)
             {
-                Plugin.Instance.Log.LogError($"Unexpected error in ListenLoop: {ex}");
-            }
-        }
-
-
-        private async Task HandleClient(WebSocket socket)
-        {
-            var buffer = new byte[1024];
-            try
-            {
-                while (socket.State == WebSocketState.Open)
-                {
-                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                        break;
-                }
-            }
-            catch { }
-            finally
-            {
-                lock (clients) clients.Remove(socket);
-                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-                socket.Dispose();
-                Plugin.Instance.Log.LogInfo("Client disconnected.");
+                Plugin.Instance.Log.LogError($"WebSocket server failed to start: {ex}");
             }
         }
 
@@ -112,39 +52,55 @@ namespace SFMToyWebsocket
             vibeMode = (int)CommonVibratorController.VibrationStrength;
         }
 
-        private async void BroadcastToyStatus()
+        private void BroadcastToyStatus()
         {
             string json = $"{{\"vibe\":{vibeMode},\"piston\":{pistonMode}}}";
-            byte[] bytes = Encoding.UTF8.GetBytes(json);
+            StatusService.Broadcast(json);
+        }
 
-            lock (clients)
+        private void OnDestroy()
+        {
+            if (wssv != null)
             {
-                foreach (var client in clients.ToArray())
+                wssv.Stop();
+                Plugin.Instance.Log.LogInfo("WebSocket server shut down.");
+            }
+        }
+
+        private class StatusService : WebSocketBehavior
+        {
+            private static readonly List<StatusService> clients = new();
+
+            protected override void OnOpen()
+            {
+                lock (clients) clients.Add(this);
+                Plugin.Instance.Log.LogInfo("WebSocket client connected.");
+            }
+
+            protected override void OnClose(CloseEventArgs e)
+            {
+                lock (clients) clients.Remove(this);
+                Plugin.Instance.Log.LogInfo("WebSocket client disconnected.");
+            }
+
+            public static void Broadcast(string message)
+            {
+                lock (clients)
                 {
-                    if (client.State == WebSocketState.Open)
+                    foreach (var client in clients.ToArray())
                     {
                         try
                         {
-                            client.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cts.Token);
+                            client.Send(message);
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            Plugin.Instance.Log.LogWarning($"Failed to send to client: {ex.Message}");
                             clients.Remove(client);
                         }
                     }
                 }
             }
-        }
-
-        private void OnDestroy()
-        {
-            cts.Cancel();
-            httpListener?.Close();
-            foreach (var socket in clients)
-            {
-                try { socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server closing", CancellationToken.None).Wait(); } catch { }
-            }
-            Plugin.Instance.Log.LogInfo("WebSocket server shut down.");
         }
     }
 }
